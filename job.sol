@@ -37,8 +37,8 @@ contract flatSelling {
     function flatAdder(uint _id, address _owner, uint _square, uint _expirationDate) public {
         require(admin == msg.sender, "No permissions");
         
-        flats.push(Flat(_id, _owner, _square, _expirationDate));
-        salingFlats.push(flatSale(_id, false, 0, 0, false, false));
+        flats.push(Flat(flats.length + 1, _owner, _square, _expirationDate));
+        salingFlats.push(flatSale(salingFlats + 1, false, 0, 0, false, false));
     }
 
     function flatOnSale(uint _id, uint _price, uint saleTime) public {
