@@ -64,6 +64,7 @@ contract flatSelling {
 
     function buyerConfirmation(uint _id) public payable returns (bool) {
         require(salingFlats[_id].status == true, "This flat is not for sale");
+        require(msg.sender != flats[_id].owner);
         require(msg.value == salingFlats[_id].price*10**18, "Not that price");
         salingFlats[_id].payed = true;
 	    return true;
