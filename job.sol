@@ -38,7 +38,7 @@ contract flatSelling {
         require(admin == msg.sender, "No permissions");
         
         flats.push(Flat(flats.length + 1, _owner, _square, _expirationDate));
-        salingFlats.push(flatSale(salingFlats + 1, false, 0, 0, false, false));
+        salingFlats.push(flatSale(_id, false, 0, 0, false, false));
     }
 
     function flatOnSale(uint _id, uint _price, uint saleTime) public {
@@ -54,7 +54,7 @@ contract flatSelling {
 	require(msg.sender == admin, "You don't have permissions to sale flat");
 	require(salingFlats[_id].status == true, "Flat is not on the sale");
 	salingFlats[_id].status = false;
-    if (salingFlats[_id].payed == true) {
+    if (salingFlats[_id].payed == true && msg.sender != flats[_id].owner) {
         payable(msg.sender).transfer(salingFlats[_id].price*10**18);
     }
     if (salingFlats[_id].adminConfirm == true) {
