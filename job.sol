@@ -17,6 +17,7 @@ contract flatSelling {
         uint price;
         uint timeToSale;
         bool payed;
+        bool adminConfirm;
     }
 
     Flat[] public flats;
@@ -37,7 +38,7 @@ contract flatSelling {
         require(admin == msg.sender, "No permissions");
         
         flats.push(Flat(_id, _owner, _square, _expirationDate));
-        salingFlats.push(flatSale(_id, false, 0, 0, false));
+        salingFlats.push(flatSale(_id, false, 0, 0, false, false));
     }
 
     function flatOnSale(uint _id, uint _price, uint saleTime) public {
@@ -67,15 +68,15 @@ contract flatSelling {
 
 
     function adminSaleConfirmation(uint _id) public payable returns (bool) {
-	payable(admin).transfer(salingFlats[_id].price*10**18);
+        require(salingFlats[_id].payed == true, "Nothing to confirmate");
+        salingFlats[_id].adminConfirm = true;
+	    payable(admin).transfer(salingFlats[_id].price*10**18);
 	return true;
    	}
 
     function flatSeller(uint _id) public payable {
-        bool buyerStatus = buyerConfirmation(_id);
-        bool salerStatus = adminSaleConfirmation(_id);
-        require(buyerStatus == true, "Error in proccess");
-	    require(salerStatus == true, "Error in proccess");
+        require(salingFlats[_id].payed == true, "Error in proccess");
+	    require(salingFlats[_id].adminConfirm == true, "Error in proccess");
         salingFlats[_id].status = false;
         salingFlats[_id].price = 0;
         salingFlats[_id].timeToSale = 0;
@@ -89,8 +90,4 @@ contract flatSelling {
     function arrayCheckerSal() public view returns (flatSale[] memory) {
         return salingFlats;
     }
-    // function abc () payable {}
-    // to.transfer(msg.value)
-    // payable(to).transfer(what)
-    // function moneyReceiving()
 }
