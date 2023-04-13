@@ -34,11 +34,11 @@ contract flatSelling {
     //     address member = _newMember;
     // }
 
-    function flatAdder(address _owner, uint _square, uint _expirationDate) public {
+    function flatAdder(uint _id, address _owner, uint _square, uint _expirationDate) public {
         require(admin == msg.sender, "No permissions");
         
         flats.push(Flat(_id, _owner, _square, _expirationDate));
-        salingFlats.push(flatSale(salingFlats.length + 1, false, 0, 0, false, false));
+        salingFlats.push(flatSale(_id, false, 0, 0, false, false));
     }
 
     function flatOnSale(uint _id, uint _price, uint saleTime) public {
@@ -56,6 +56,9 @@ contract flatSelling {
 	salingFlats[_id].status = false;
     if (salingFlats[_id].payed == true) {
         payable(msg.sender).transfer(salingFlats[_id].price*10**18);
+    }
+    if (salingFlats[_id].adminConfirm == true) {
+        salingFlats[_id].adminConfirm == false;
     }
 	}
 
