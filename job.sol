@@ -34,11 +34,11 @@ contract flatSelling {
     //     address member = _newMember;
     // }
 
-    function flatAdder(uint _id, address _owner, uint _square, uint _expirationDate) public {
+    function flatAdder(address _owner, uint _square, uint _expirationDate) public {
         require(admin == msg.sender, "No permissions");
         
         flats.push(Flat(_id, _owner, _square, _expirationDate));
-        salingFlats.push(flatSale(_id, false, 0, 0, false, false));
+        salingFlats.push(flatSale(salingFlats.length + 1, false, 0, 0, false, false));
     }
 
     function flatOnSale(uint _id, uint _price, uint saleTime) public {
