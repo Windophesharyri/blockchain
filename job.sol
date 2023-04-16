@@ -14,14 +14,19 @@ contract flatSelling {
     struct flatSale {
         uint estateId;
         bool status;
-        uint price;
         uint timeToSale;
         bool payed;
         bool adminConfirm;
     }
 
+    struct payships {
+        address user;
+        uint money;
+    }
+
     Flat[] public flats;
     flatSale[] public salingFlats;
+    payships[] public payshipsArray;
 
     constructor() {
         admin = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
@@ -38,7 +43,7 @@ contract flatSelling {
         require(admin == msg.sender, "No permissions");
         
         flats.push(Flat(flats.length + 1, _owner, _square, _expirationDate));
-        salingFlats.push(flatSale(_id, false, 0, 0, false, false));
+        salingFlats.push(flatSale(_id, false, 0, false, false));
     }
 
     function flatOnSale(uint _id, uint _price, uint saleTime) public {
@@ -46,17 +51,29 @@ contract flatSelling {
         require(salingFlats[_id].status == false, "Flat already on the sale");
         salingFlats[_id].estateId = _id;
         salingFlats[_id].status = true;
-        salingFlats[_id].price = _price;
         salingFlats[_id].timeToSale = saleTime;
+    }
+
+    function maxMoneyIdFinder() public view returns (uint) {
+        uint previous = 0;
+        uint id = 0;
+        for (uint i = 0; i < payshipsArray.length; i++) {
+            if (payshipsArray[i].money > previous) {
+                id = i;
+            }
+            previous = payshipsArray[i].money;
+        } 
+        return id;
     }
 
     function cancelSale(uint _id) public payable {
 	require(msg.sender == admin, "You don't have permissions to sale flat");
 	require(salingFlats[_id].status == true, "Flat is not on the sale");
 	salingFlats[_id].status = false;
-    if (salingFlats[_id].payed == true && msg.sender != flats[_id].owner) {
-        payable(msg.sender).transfer(salingFlats[_id].price*10**18);
-    }
+    uint id = maxMoneyIdFinder();
+    for (uint i = 0; i < payshipsArray.length; i++) {
+        payable(payshipsArray[i].user).transfer(payshipsArray[i].money*10**18);
+    } 
     if (salingFlats[_id].adminConfirm == true) {
         salingFlats[_id].adminConfirm == false;
     }
@@ -65,8 +82,8 @@ contract flatSelling {
     function buyerConfirmation(uint _id) public payable returns (bool) {
         require(salingFlats[_id].status == true, "This flat is not for sale");
         require(msg.sender != flats[_id].owner);
-        require(msg.value == salingFlats[_id].price*10**18, "Not that price");
         salingFlats[_id].payed = true;
+        payshipsArray.push(payships(msg.sender, msg.value));
 	    return true;
     }
 
@@ -74,7 +91,27 @@ contract flatSelling {
     function adminSaleConfirmation(uint _id) public payable returns (bool) {
         require(salingFlats[_id].payed == true, "Nothing to confirmate");
         salingFlats[_id].adminConfirm = true;
-	    payable(admin).transfer(salingFlats[_id].price*10**18);
+        uint money = 0;
+        uint previous = 0;
+        uint id = 0;
+        address user = address(0);
+        for (uint i = 0; i < payshipsArray.length; i++) {
+            if (payshipsArray[i].money > previous) {
+                id = i;
+                user = payshipsArray[i].user;
+                money = payshipsArray[i].money;
+            }
+            previous = payshipsArray[i].money;
+        } 
+        payable(admin).transfer(money*10**18);
+        for (uint i = 0; i < payshipsArray.length; i++) {
+            if (i == id) {
+                i == i;
+            }
+            else {
+                payable(payshipsArray[i].user).transfer(payshipsArray[i].money*10**18);
+            }
+        } 
 	return true;
    	}
 
@@ -82,7 +119,6 @@ contract flatSelling {
         require(salingFlats[_id].payed == true, "Error in proccess");
 	    require(salingFlats[_id].adminConfirm == true, "Error in proccess");
         salingFlats[_id].status = false;
-        salingFlats[_id].price = 0;
         salingFlats[_id].timeToSale = 0;
         salingFlats[_id].payed = false;
         flats[_id].owner = msg.sender;
