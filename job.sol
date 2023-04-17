@@ -55,7 +55,7 @@ contract flatSelling {
         require(msg.sender == admin, "You don't have permission to sale flats");
         require(FlatOnSale[_id] == false, "Flat already on the sale");
         FlatOnSale[_id] = true;
-        FlatSaleTime[_id] = _saleTime;
+        FlatSaleTime[_id] = block.timestamp + _saleTime;
         FlatSellingPrice[_id] = _price;
     }
 
@@ -76,7 +76,7 @@ contract flatSelling {
 	require(FlatOnSale[_id] == true, "Flat is not on the sale");
 	FlatOnSale[_id] = false;
     for (uint i = 0; i < payshipsArray.length; i++) {
-        payable(payshipsArray[i].user).transfer(payshipsArray[i].money*10**18);
+        payable(payshipsArray[i].user).transfer(payshipsArray[i].money);
     } 
     if (FlatAdminConfirm[_id] == true) {
         FlatAdminConfirm[_id] == false;
@@ -84,9 +84,10 @@ contract flatSelling {
 	}
 
     function buyerConfirmation(uint _id) public payable returns (bool) {
+        require( block.timestamp < FlatSaleTime);
         require(FlatOnSale[_id] == true, "This flat is not for sale");
         require(msg.sender != FlatOwner[_id], "You can't buy your own flat");
-        require(msg.value > FlatSellingPrice[_id]);
+        require(msg.value > FlatSellingPrice[_id]*10**18, "Not enough money");
         FlatBuyerConfirm[_id] = true;
         payshipsArray.push(payships(msg.sender, msg.value));
 	    return true;
@@ -117,7 +118,7 @@ contract flatSelling {
                 payable(payshipsArray[i].user).transfer(payshipsArray[i].money);
             }
         } 
-        FlatMostValue[_id] = payshipsArray[_id].user;
+        FlatMostValue[_id] = payshipsArray[id].user;
 	return true;
    	}
 
