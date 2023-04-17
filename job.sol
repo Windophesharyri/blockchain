@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.7.0;
 
+import "hardhat/console.sol";
+
 contract flatSelling {
     address admin;
     address member;
@@ -9,7 +11,6 @@ contract flatSelling {
         uint estateId;
         address owner;
         uint square;
-        uint expirationDate;
     }
     struct flatSale {
         uint estateId;
@@ -24,34 +25,38 @@ contract flatSelling {
         uint money;
     }
 
-    Flat[] public flats;
-    flatSale[] public salingFlats;
+    mapping (uint => address) public FlatOwner;
+    mapping (uint => uint) public FlatSquare;
+
+    mapping (uint => uint) public FlatSellingPrice;
+    mapping (uint => bool) public FlatOnSale;
+    mapping (uint => uint) public FlatSaleTime;
+    mapping (uint => bool) public FlatBuyerConfirm;
+    mapping (uint => bool) public FlatAdminConfirm;
+
+    mapping (uint => address) public FlatMostValue;
+
     payships[] public payshipsArray;
 
     constructor() {
         admin = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
         member = msg.sender;
-        flatAdder(1, admin, 50, 7);
+        flatAdder(1, admin, 50);
     }
-    
-    // function roleSwap(address _newAdmin, address _newMember) public {
-    //     address admin = _newAdmin;
-    //     address member = _newMember;
-    // }
 
-    function flatAdder(uint _id, address _owner, uint _square, uint _expirationDate) public {
+    function flatAdder(uint _id, address _owner, uint _square) public {
         require(admin == msg.sender, "No permissions");
         
-        flats.push(Flat(flats.length + 1, _owner, _square, _expirationDate));
-        salingFlats.push(flatSale(_id, false, 0, false, false));
+        FlatOwner[_id] = _owner;
+        FlatSquare[_id] = _square;
     }
 
-    function flatOnSale(uint _id, uint _price, uint saleTime) public {
+    function flatOnSale(uint _id, uint _price, uint _saleTime) public {
         require(msg.sender == admin, "You don't have permission to sale flats");
-        require(salingFlats[_id].status == false, "Flat already on the sale");
-        salingFlats[_id].estateId = _id;
-        salingFlats[_id].status = true;
-        salingFlats[_id].timeToSale = saleTime;
+        require(FlatOnSale[_id] == false, "Flat already on the sale");
+        FlatOnSale[_id] = true;
+        FlatSaleTime[_id] = _saleTime;
+        FlatSellingPrice[_id] = _price;
     }
 
     function maxMoneyIdFinder() public view returns (uint) {
@@ -68,29 +73,29 @@ contract flatSelling {
 
     function cancelSale(uint _id) public payable {
 	require(msg.sender == admin, "You don't have permissions to sale flat");
-	require(salingFlats[_id].status == true, "Flat is not on the sale");
-	salingFlats[_id].status = false;
-    uint id = maxMoneyIdFinder();
+	require(FlatOnSale[_id] == true, "Flat is not on the sale");
+	FlatOnSale[_id] = false;
     for (uint i = 0; i < payshipsArray.length; i++) {
         payable(payshipsArray[i].user).transfer(payshipsArray[i].money*10**18);
     } 
-    if (salingFlats[_id].adminConfirm == true) {
-        salingFlats[_id].adminConfirm == false;
+    if (FlatAdminConfirm[_id] == true) {
+        FlatAdminConfirm[_id] == false;
     }
 	}
 
     function buyerConfirmation(uint _id) public payable returns (bool) {
-        require(salingFlats[_id].status == true, "This flat is not for sale");
-        require(msg.sender != flats[_id].owner);
-        salingFlats[_id].payed = true;
+        require(FlatOnSale[_id] == true, "This flat is not for sale");
+        require(msg.sender != FlatOwner[_id], "You can't buy your own flat");
+        require(msg.value > FlatSellingPrice[_id]);
+        FlatBuyerConfirm[_id] = true;
         payshipsArray.push(payships(msg.sender, msg.value));
 	    return true;
     }
 
 
     function adminSaleConfirmation(uint _id) public payable returns (bool) {
-        require(salingFlats[_id].payed == true, "Nothing to confirmate");
-        salingFlats[_id].adminConfirm = true;
+        require(FlatBuyerConfirm[_id] == true, "Nothing to confirmate");
+        FlatAdminConfirm[_id] = true;
         uint money = 0;
         uint previous = 0;
         uint id = 0;
@@ -103,31 +108,25 @@ contract flatSelling {
             }
             previous = payshipsArray[i].money;
         } 
-        payable(admin).transfer(money*10**18);
+        payable(FlatOwner[_id]).transfer(money);
         for (uint i = 0; i < payshipsArray.length; i++) {
             if (i == id) {
                 i == i;
             }
             else {
-                payable(payshipsArray[i].user).transfer(payshipsArray[i].money*10**18);
+                payable(payshipsArray[i].user).transfer(payshipsArray[i].money);
             }
         } 
+        FlatMostValue[_id] = payshipsArray[_id].user;
 	return true;
    	}
 
     function flatSeller(uint _id) public payable {
-        require(salingFlats[_id].payed == true, "Error in proccess");
-	    require(salingFlats[_id].adminConfirm == true, "Error in proccess");
-        salingFlats[_id].status = false;
-        salingFlats[_id].timeToSale = 0;
-        salingFlats[_id].payed = false;
-        flats[_id].owner = msg.sender;
+        require(FlatBuyerConfirm[_id] == true, "Error in proccess");
+	    require(FlatAdminConfirm[_id] == true, "Error in proccess");
+        FlatOnSale[_id] = false;
+        FlatSaleTime[_id] = 0;
+        FlatOnSale[_id] = false;
+        FlatOwner[_id] = FlatMostValue[_id];
      	}
-    
-    function arrayChecker() public view returns (Flat[] memory) {
-        return flats;
-    }
-    function arrayCheckerSal() public view returns (flatSale[] memory) {
-        return salingFlats;
-    }
 }
