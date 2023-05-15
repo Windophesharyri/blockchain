@@ -72,7 +72,6 @@ contract flatSelling {
     }
 
     function cancelSale(uint _id) public payable {
-	require(msg.sender == admin, "You don't have permissions to sale flat");
 	require(FlatOnSale[_id] == true, "Flat is not on the sale");
 	FlatOnSale[_id] = false;
     for (uint i = 0; i < payshipsArray.length; i++) {
@@ -84,7 +83,6 @@ contract flatSelling {
 	}
 
     function buyerConfirmation(uint _id) public payable returns (bool) {
-        require( block.timestamp < FlatSaleTime);
         require(FlatOnSale[_id] == true, "This flat is not for sale");
         require(msg.sender != FlatOwner[_id], "You can't buy your own flat");
         require(msg.value > FlatSellingPrice[_id]*10**18, "Not enough money");
@@ -93,9 +91,11 @@ contract flatSelling {
 	    return true;
     }
 
+    uint start = block.timestamp;
 
     function adminSaleConfirmation(uint _id) public payable returns (bool) {
         require(FlatBuyerConfirm[_id] == true, "Nothing to confirmate");
+        FlatSaleTime[_id] = start + 10 seconds;
         FlatAdminConfirm[_id] = true;
         uint money = 0;
         uint previous = 0;
@@ -121,6 +121,10 @@ contract flatSelling {
         FlatMostValue[_id] = payshipsArray[id].user;
 	return true;
    	}
+    
+    function flatSaleTimeChecker(uint _id) public view{
+        require(block.timestamp < FlatSaleTime[_id], "Flat is overtimed");
+    }
 
     function flatSeller(uint _id) public payable {
         require(FlatBuyerConfirm[_id] == true, "Error in proccess");
